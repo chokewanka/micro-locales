@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -25,7 +26,7 @@ public class Ambiente implements Serializable {
 	@Column(name="nombre")
 	private String nombre;
 	
-	@ManyToMany(mappedBy = "ambientes")
+	@ManyToMany(fetch = FetchType.LAZY, mappedBy = "ambientes")
 	@JsonIgnore
 	private List<Local> locales;
 	
@@ -54,10 +55,28 @@ public class Ambiente implements Serializable {
 	public void setLocales(List<Local> locales) {
 		this.locales = locales;
 	}
+	
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		Ambiente that = (Ambiente) o;
+
+		if (this.getId() != null ? !this.getId().equals(that.getId()) : that.getId() != null)
+			return false;
+
+		return true;
+	}
+
+	public int hashCode() {
+		return (this.getId() != null ? this.getId().hashCode() : 0);
+	}
 
 	@Override
 	public String toString() {
-		return "Ambiente [id=" + id + ", nombre=" + nombre + ", locales=" + locales + "]";
+		return "Ambiente [id=" + id + ", nombre=" + nombre + "]";
 	}
 
 	private static final long serialVersionUID = 6564494869503155826L;

@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pe.com.chokewanka.springboot.micro.locales.filter.LocalFilter;
+import pe.com.chokewanka.springboot.micro.locales.model.Ambiente;
 import pe.com.chokewanka.springboot.micro.locales.model.Local;
+import pe.com.chokewanka.springboot.micro.locales.repository.AmbienteRepository;
 import pe.com.chokewanka.springboot.micro.locales.repository.LocalRepository;
 import pe.com.chokewanka.springboot.micro.locales.service.LocalService;
 import pe.com.chokewanka.springboot.micro.locales.utils.ModelConstants;
@@ -22,26 +24,37 @@ public class LocalServiceImpl implements LocalService {
 	@Autowired
 	private LocalRepository localRepository;
 	
+	@Autowired
+	private AmbienteRepository ambienteRepository;
+	
 	@Override
 	@Transactional(readOnly = true)
 	public List<Local> findAll() {
-		return (List<Local>) localRepository.findAll();
+		List<Local> dbLocales = (List<Local>) localRepository.findAll();
+		
+		List<Local> locales = new ArrayList<Local>();
+		for(Local dbLocal : dbLocales) {
+			Local local = new Local();
+			
+			local.setId(dbLocal.getId());
+			local.setNombre(dbLocal.getNombre());
+			local.setDireccion(dbLocal.getDireccion());
+			
+			locales.add(local);
+		}
+		
+		return locales;
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Local> filter(Map<String, String> filters) {
-		
 		LocalFilter localFilter = new LocalFilter();
 		
-		String key;
-		String value;
 		int totalFilters = 0;
-		
 		for(Map.Entry<String, String> filter : filters.entrySet()) {
-			
-			key = filter.getKey();
-			value = filter.getValue();
+			String key = filter.getKey();
+			String value = filter.getValue();
 			
 			switch (key) {
 			case ModelConstants.LOCAL_NOMBRE:
@@ -58,7 +71,20 @@ public class LocalServiceImpl implements LocalService {
 		}
 		
 		if (totalFilters > 0) {
-			return (List<Local>) localRepository.findCustom(localFilter);
+			List<Local> dbLocales = localRepository.findCustom(localFilter);
+			
+			List<Local> locales = new ArrayList<Local>();
+			for(Local dbLocal : dbLocales) {
+				Local local = new Local();
+				
+				local.setId(dbLocal.getId());
+				local.setNombre(dbLocal.getNombre());
+				local.setDireccion(dbLocal.getDireccion());
+				
+				locales.add(local);
+			}
+			
+			return locales;
 		}
 		else {
 			return new ArrayList<Local>();
@@ -69,52 +95,112 @@ public class LocalServiceImpl implements LocalService {
 	@Override
 	@Transactional(readOnly = true)
 	public Local findById(Long id) {
-		
 		Optional<Local> optionalLocal = localRepository.findById(id);
 		
 		if(optionalLocal.isPresent()) {
-			return optionalLocal.get();
+			Local dbLocal = optionalLocal.get();
+			Local local = new Local();
+			
+			local.setId(dbLocal.getId());
+			local.setNombre(dbLocal.getNombre());
+			local.setDireccion(dbLocal.getDireccion());
+			
+			for(Ambiente dbAmbiente : dbLocal.getAmbientes()) {
+				Ambiente ambiente = new Ambiente();
+				ambiente.setId(dbAmbiente.getId());
+				ambiente.setNombre(dbAmbiente.getNombre());
+				
+				local.getAmbientes().add(ambiente);
+			}
+			
+			return local;
 		}
 		else {
 			return new Local();
 		}
-		
 	}
 
 	@Override
 	@Transactional
-	public Local save(Local local) {
-		
-		Long id = local.getId();
-		if(id == null || id.equals(UtilConstants.EMPTY_ID)) {
-			local.setIsDeleted(UtilConstants.IS_NOT_DELETED);
-		}
-		
-		Optional<Local> optionalLocal = localRepository.findById(id);
-		
-		if(optionalLocal.isPresent()) {
-			local.setIsDeleted(UtilConstants.IS_DELETED);
-			return localRepository.save(local);
+	public Long create(Local local) {
+		if(local.getId() == null || local.getId().equals(UtilConstants.EMPTY_ID)) {
+			Local newLocal = new Local();
+			
+			newLocal.setNombre(local.getNombre());
+			newLocal.setDireccion(local.getDireccion());
+			newLocal.setIsDeleted(UtilConstants.IS_NOT_DELETED);
+			
+			List<Ambiente> arrAmbiente = new ArrayList<Ambiente>();
+			for(Ambiente ambiente : local.getAmbientes()) {
+				Optional<Ambiente> optAmbiente = ambienteRepository.findById(ambiente.getId());
+				
+				if(optAmbiente.isPresent()) {
+					Ambiente curAmbiente = optAmbiente.get();
+					
+					curAmbiente.getLocales().add(newLocal);
+					
+					arrAmbiente.add(curAmbiente);
+				}
+			}
+			newLocal.setAmbientes(arrAmbiente);
+			
+			newLocal = localRepository.save(newLocal);
+			return newLocal.getId();
 		}
 		else {
-			return new Local();
+			return 0L;
 		}
-		
+	}
+	
+	@Override
+	@Transactional
+	public void edit(Long id, Local local) {
+		if(id != null && !id.equals(UtilConstants.EMPTY_ID)) {
+			Optional<Local> optLocal = localRepository.findById(id);
+			
+			if(optLocal.isPresent()) {
+				Local curLocal = optLocal.get();
+				
+				curLocal.setNombre(local.getNombre());
+				curLocal.setDireccion(local.getDireccion());
+
+				List<Ambiente> arrAmbiente = new ArrayList<Ambiente>();
+				for(Ambiente ambiente : local.getAmbientes()) {
+					Optional<Ambiente> optAmbiente = ambienteRepository.findById(ambiente.getId());
+					
+					if(optAmbiente.isPresent()) {
+						Ambiente curAmbiente = optAmbiente.get();
+						
+						int i = curAmbiente.getLocales().indexOf(curLocal);
+						if(i >= 0) {
+							curAmbiente.getLocales().set(i, curLocal);
+						}
+						else {
+							curAmbiente.getLocales().add(curLocal);
+						}
+						
+						arrAmbiente.add(curAmbiente);
+					}
+				}
+				curLocal.setAmbientes(arrAmbiente);
+				
+				localRepository.save(curLocal);
+			}
+		}
 	}
 
 	@Override
 	@Transactional
 	public void delete(Long id) {
-		
 		Optional<Local> optionalLocal = localRepository.findById(id);
 		
 		if(optionalLocal.isPresent()) {
 			Local local = optionalLocal.get();
 			
 			local.setIsDeleted(UtilConstants.IS_DELETED);
+			
 			localRepository.save(local);
 		}
-		
 	}
 
 }

@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import pe.com.chokewanka.springboot.micro.locales.model.Local;
@@ -32,17 +34,25 @@ public class LocalController {
 	}
 	
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
-	public Local ver(@PathVariable Long id) throws Exception {
+	public Local ver(@PathVariable Long id){
 		return localService.findById(id);
 	}
 	
-	@RequestMapping(value = "/save", method = RequestMethod.POST)
-	public Local guardar(@RequestBody Local local) {
-		return localService.save(local);
+	@RequestMapping(value = "/create", method = RequestMethod.POST)
+	@ResponseStatus(HttpStatus.CREATED)
+	public Long crear(@RequestBody Local local) {
+		return localService.create(local);
 	}
 	
-	@RequestMapping(value = "/delete", method = RequestMethod.DELETE)
-	public void eliminar(@RequestParam Long id) {
+	@RequestMapping(value = "/edit/{id}", method = RequestMethod.PUT)
+	@ResponseStatus(HttpStatus.CREATED)
+	public void editar(@PathVariable Long id, @RequestBody Local local) {
+		localService.edit(id, local);
+	}
+	
+	@RequestMapping(value = "/delete/{id}", method = RequestMethod.DELETE)
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void eliminar(@PathVariable Long id) {
 		localService.delete(id);
 	}
 	

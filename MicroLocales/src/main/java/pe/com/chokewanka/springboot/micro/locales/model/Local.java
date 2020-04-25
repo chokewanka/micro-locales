@@ -7,6 +7,7 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -33,7 +34,7 @@ public class Local implements Serializable {
 	@Column(name="direccion")
 	private String direccion;
 	
-	@ManyToMany(cascade = { CascadeType.ALL })
+	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(
             name = "local_x_ambiente", 
             joinColumns = { @JoinColumn(name = "local_id") }, 
@@ -75,7 +76,10 @@ public class Local implements Serializable {
 	}
 
 	public void setAmbientes(List<Ambiente> ambientes) {
-		this.ambientes = ambientes;
+		this.ambientes.clear();
+	    if (ambientes != null) {
+	        this.ambientes.addAll(ambientes);
+	    }
 	}
 
 	public Integer getIsDeleted() {
@@ -84,6 +88,24 @@ public class Local implements Serializable {
 
 	public void setIsDeleted(Integer isDeleted) {
 		this.isDeleted = isDeleted;
+	}
+	
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		Local that = (Local) o;
+
+		if (this.getId() != null ? !this.getId().equals(that.getId()) : that.getId() != null)
+			return false;
+
+		return true;
+	}
+
+	public int hashCode() {
+		return (this.getId() != null ? this.getId().hashCode() : 0);
 	}
 
 	@Override

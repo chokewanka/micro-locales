@@ -1,6 +1,8 @@
 package pe.com.chokewanka.springboot.micro.locales.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,37 @@ public class AmbienteServiceImpl implements AmbienteService {
 	
 	@Override
 	public List<Ambiente> findAll() {
-		return (List<Ambiente>) ambienteRepository.findAll();
+		List<Ambiente> dbAmbientes = (List<Ambiente>) ambienteRepository.findAll();
+		
+		List<Ambiente> ambientes = new ArrayList<Ambiente>();
+		for(Ambiente dbAmbiente : dbAmbientes) {
+			Ambiente ambiente = new Ambiente();
+			
+			ambiente.setId(dbAmbiente.getId());
+			ambiente.setNombre(dbAmbiente.getNombre());
+			
+			ambientes.add(ambiente);
+		}
+		
+		return ambientes;
 	}
 
 	@Override
 	public Ambiente findById(Long id) {
-		return ambienteRepository.findById(id).orElse(null);
+		Optional<Ambiente> optionalAmbiente = ambienteRepository.findById(id);
+		
+		if(optionalAmbiente.isPresent()) {
+			Ambiente dbAmbiente = optionalAmbiente.get();
+			Ambiente ambiente = new Ambiente();
+			
+			ambiente.setId(dbAmbiente.getId());
+			ambiente.setNombre(dbAmbiente.getNombre());
+		
+			return ambiente;
+		}
+		else {
+			return new Ambiente();
+		}
 	}
 
 }
